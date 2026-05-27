@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Flask/local runtime
+instance/
+*.sqlite
+*.sqlite3
+.env
+.flaskenv
+
+# IDE/editor
+.idea/
+.vscode/
+
+# OS files
+Thumbs.db
+.DS_Store

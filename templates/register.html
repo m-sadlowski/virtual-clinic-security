@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Virtual Clinic Auth{% endblock %}
+
+{% block content %}
+<h1 class="h3">Register</h1>
+<form method="post" class="mt-3" novalidate>
+    <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input
+            type="email"
+            class="form-control"
+            id="email"
+            name="email"
+            value="{{ email or '' }}"
+            required
+        >
+    </div>
+
+    <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input
+            type="password"
+            class="form-control"
+            id="password"
+            name="password"
+            required
+        >
+    </div>
+
+    <div class="mb-3">
+        <label for="role" class="form-label">Role</label>
+        <select class="form-select" id="role" name="role" required>
+            <option value="">Choose role</option>
+            <option value="PATIENT" {% if selected_role == "PATIENT" %}selected{% endif %}>Patient</option>
+            <option value="DOCTOR" {% if selected_role == "DOCTOR" %}selected{% endif %}>Doctor</option>
+            <option value="STAFF" {% if selected_role == "STAFF" %}selected{% endif %}>Staff</option>
+        </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Register</button>
+</form>
+{% endblock %}
