@@ -1,6 +1,9 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 
-from .auth import register_user
+from .auth import (
+    authenticate_user,
+    register_user,
+)
 
 bp = Blueprint("main", __name__)
 
@@ -9,9 +12,21 @@ def index():
     """root URL to the login page"""
     return redirect(url_for("main.login"))
 
-@bp.route("/login")
+@bp.route("/login", methods=("GET", "POST"))
 def login():
     """login page"""
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        user, error = authenticate_user(email, password)
+        if error:
+            flash(error, "danger")
+            return render_template("login.html", email=email)
+
+        flash("Logged in successfully", "success")
+        return redirect(url_for("main.dashboard"))
+
     return render_template("login.html")
 
 @bp.route("/register", methods=("GET", "POST"))
