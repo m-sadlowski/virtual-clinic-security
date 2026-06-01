@@ -11,8 +11,12 @@
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('main.login') }}">Virtual Clinic Auth</a>
             <div class="navbar-nav">
-                <a class="nav-link" href="{{ url_for('main.login') }}">Login</a>
-                <a class="nav-link" href="{{ url_for('main.register') }}">Register</a>
+                {% if not current_user %}
+                    <a class="nav-link" href="{{ url_for('main.login') }}">Login</a>
+                    <a class="nav-link" href="{{ url_for('main.register') }}">Register</a>
+                {% else %}
+                    <a class="nav-link" href="{{ url_for('main.logout') }}">Logout</a>
+                {% endif %}
                 <a class="nav-link" href="{{ url_for('main.dashboard') }}">Dashboard</a>
                 <a class="nav-link" href="{{ url_for('main.patient_panel') }}">Patient</a>
                 <a class="nav-link" href="{{ url_for('main.doctor_panel') }}">Doctor</a>

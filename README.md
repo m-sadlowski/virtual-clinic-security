@@ -21,10 +21,16 @@ linki do dokumentacji w `REFERENCES.md`
 ## Aktualny stan
 - Rejestracja uzytkownika obslugiwana przez formularz w `/register`
 - Obslugiwane role: `PATIENT`, `DOCTOR`, `STAFF`
+- Role sa zapisywane przy uzytkowniku, ale dostep do paneli nie jest jeszcze ograniczony rola
 - Haslo jest zapisywane jako hash PBKDF2-HMAC z osobna sola dla kazdego uzytkownika
 - Dane uzytkownika sa zapisywane w tabeli `users`
 - Logowanie obsluguje formularz w `/login`
 - Logowanie sprawdza email i haslo
+- Sesja jest zapisywana w tabeli `sessions`
+- Cookie przechowuje tylko `session_token`
+- Sesja ma 3 minuty czasu bezczynnosci i jest odnawiana przy poprawnym requescie
+- Sesja ma limit absolutny 1h od zalogowania
+- Logout usuwa sesje z bazy i cookie z przegladarki
 - Komunikaty bledu i sukcesu sa pokazywane przez `flash`
 
 ## Struktura
@@ -60,11 +66,12 @@ http://127.0.0.1:5000
 ```
 
 ## Aktualny route'ing
-
 - `/` - przekierowanie do `/login`
 - `/login` - formularz i obsluga logowania
+- `/logout` - usuniecie sesji i cookie
 - `/register` - formularz i zapis rejestracji uzytkownika
 - `/dashboard` - panel glowny
 - `/patient` - panel pacjenta
 - `/doctor` - panel lekarza
 - `/staff` - panel staffu
+
