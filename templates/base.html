@@ -15,12 +15,21 @@
                     <a class="nav-link" href="{{ url_for('main.login') }}">Login</a>
                     <a class="nav-link" href="{{ url_for('main.register') }}">Register</a>
                 {% else %}
-                    <a class="nav-link" href="{{ url_for('main.logout') }}">Logout</a>
+                    <a class="nav-link" href="{{ url_for('main.dashboard') }}">Dashboard</a>
+                    {% if user_has_role('PATIENT') %}
+                        <a class="nav-link" href="{{ url_for('main.patient_panel') }}">Patient</a>
+                    {% endif %}
+                    {% if user_has_role('DOCTOR') %}
+                        <a class="nav-link" href="{{ url_for('main.doctor_panel') }}">Doctor</a>
+                    {% endif %}
+                    {% if user_has_role('STAFF') %}
+                        <a class="nav-link" href="{{ url_for('main.staff_panel') }}">Staff</a>
+                    {% endif %}
+                    <form method="post" action="{{ url_for('main.logout') }}" class="d-flex mb-0">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-link nav-link border-0 bg-transparent">Logout</button>
+                    </form>
                 {% endif %}
-                <a class="nav-link" href="{{ url_for('main.dashboard') }}">Dashboard</a>
-                <a class="nav-link" href="{{ url_for('main.patient_panel') }}">Patient</a>
-                <a class="nav-link" href="{{ url_for('main.doctor_panel') }}">Doctor</a>
-                <a class="nav-link" href="{{ url_for('main.staff_panel') }}">Staff</a>
             </div>
         </div>
     </nav>
