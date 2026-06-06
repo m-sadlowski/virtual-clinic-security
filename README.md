@@ -19,25 +19,21 @@ linki do dokumentacji w `REFERENCES.md`
 `NOTES.md` - krotki opis i decyzje implementacji
 
 ## Aktualny stan
-- Rejestracja uzytkownika obslugiwana przez formularz w `/register`
+- Rejestracja i logowanie uzytkownika dzialaja na formularzach Flask/Jinja
+- Hasla sa hashowane przez `PBKDF2-HMAC` z osobna sola dla kazdego uzytkownika
+- Sesje sa przechowywane w bazie SQLite, a cookie trzyma tylko `session_token`
 - Obslugiwane role: `PATIENT`, `DOCTOR`, `STAFF`
-- Role sa zapisywane przy uzytkowniku, ale dostep do paneli nie jest jeszcze ograniczony rola
-- Haslo jest zapisywane jako hash PBKDF2-HMAC z osobna sola dla kazdego uzytkownika
-- Dane uzytkownika sa zapisywane w tabeli `users`
-- Logowanie obsluguje formularz w `/login`
-- Logowanie sprawdza email i haslo
-- Sesja jest zapisywana w tabeli `sessions`
-- Cookie przechowuje tylko `session_token`
-- Sesja ma 3 minuty czasu bezczynnosci i jest odnawiana przy poprawnym requescie
-- Sesja ma limit absolutny 1h od zalogowania
-- Logout usuwa sesje z bazy i cookie z przegladarki
-- Komunikaty bledu i sukcesu sa pokazywane przez `flash`
+- Panele i nawigacja sa ograniczone zgodnie z rola uzytkownika
+- `/dashboard` przekierowuje do panelu zgodnego z rola
+- Formularze `POST` sa chronione tokenem CSRF, a `/logout` przyjmuje tylko `POST`
+- Logowanie ma ograniczenie nieudanych prob per `IP + email`
 
 ## Struktura
 - `run.py` - punkt startowy 
 - `app/__init__.py` - tworzenie i konfiguracja app
 - `app/db.py` - polaczenie z SQLite i `init-db`
 - `app/auth.py` - logika rejestracji, logowania i sesji
+- `app/security.py` - CSRF, ograniczenie prob logowania i pomocnicze zabezpieczenia
 - `app/routes.py` - route'ingi do odpowiednich HTML'ow
 - `app/schema.sql` - definicje tabel SQLite
 - `templates/` - szablony HTML
@@ -51,6 +47,18 @@ python -m venv .venv
 zaleznosci:
 ```powershell
 python -m pip install -r requirements.txt
+```
+Wymagana konfiguracja `SECRET_KEY`:
+```powershell
+$env:SECRET_KEY="your-secret-key"
+```
+Opcjonalna konfiguracja dla lokalnego HTTP:
+```powershell
+$env:COOKIE_SECURE="0"
+```
+Opcjonalne wlaczenie debug:
+```powershell
+$env:FLASK_DEBUG="1"
 ```
 Tworzenie tabeli w bazie (tylko raz - 1'sze odpalenie):
 ```powershell
@@ -67,11 +75,9 @@ http://127.0.0.1:5000
 
 ## Aktualny route'ing
 - `/` - przekierowanie do `/login`
-- `/login` - formularz i obsluga logowania
-- `/logout` - usuniecie sesji i cookie
-- `/register` - formularz i zapis rejestracji uzytkownika
-- `/dashboard` - panel glowny
-- `/patient` - panel pacjenta
-- `/doctor` - panel lekarza
-- `/staff` - panel staffu
+- `/login` i `/register` - formularze logowania i rejestracji
+- `/logout` - `POST`, usuniecie sesji i cookie
+- `/dashboard` - przekierowanie do panelu zgodnego z rola
+- `/patient`, `/doctor`, `/staff` - panele ograniczone do odpowiednich rol
+
 
