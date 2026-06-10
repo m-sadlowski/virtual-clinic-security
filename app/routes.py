@@ -1,11 +1,10 @@
-from enum import nonmember
-import string
 from flask import Blueprint, abort, current_app, flash, g, redirect, render_template, request, url_for
 from .auth import (
     SESSION_IDLE_LIFETIME_SECONDS,
     authenticate_user,
     create_session,
     delete_session,
+    delete_user,
     get_user_by_session_token,
     register_user,
 )
@@ -61,53 +60,6 @@ def redirect_to_role_panel(user):
         abort(403)
     return redirect(url_for(role_endpoint))
 
-def validate_email(email: str) -> str | None:
-    """Check if inputed emain is a valid email format"""
-    splited = email.split('@')
-    if len(splited) < 2:
-        return "Emain either doesnt contain domain or local adress"
-    if len(splited) != 2:
-        return "Email contains multiple \"@\" symbols"
-    allowed_characters_local = string.ascii_letters + string.digits + "!#$%&'*+-/=?^_`{|}~"
-    allowed_characters_domain = string.ascii_letters + string.digits + "-" + "."
-    local_part = splited[0]
-    domain_part = splited[1]
-    if local_part == '' or domain_part == '':
-        return "Either local address or email domain is missing"
-
-    if local_part.startswith('.') or local_part.endswith('.'):
-        return "Local adress cannot start or end with comma"
-    if ".." in local_part:
-        return "Local adress cannot contail multiple commas next to each other"
-    if not set(local_part).issubset(allowed_characters_local):
-        return "Local adress contains invalid character"
-    if len(local_part) > 64:
-        return "Local adress too long"
-    
-    if domain_part.startswith('-') or local_part.endswith('-'):
-        return "Domain cannot end or begin with hyphen"
-    if not set(domain_part).issubset(allowed_characters_domain):
-        return "Domain contains invalid character"
-    if len(domain_part) > 256:
-        return "Domain is too long"
-    subdomain_part_list = domain_part.split('.')
-    for sub in subdomain_part_list:
-        if sub == '':
-            return "Domain includes empty subdomain"
-        if len(sub) > 64:
-            return "Subdomain too long"
-        if len(sub) == 1:
-            return "Subdomain is one character long"
-    return None
-    
-def validate_password(password: str) -> str | None:
-    """Check if password is a valid password format"""
-    special_characters = string.punctuation + string.whitespace
-    if len(password) <= 8:
-        return "Password should be at least 8 characters long"
-    if password.upper() == password or password.lower() == password or set(password).isdisjoint(special_characters):
-        return "Password should include upper case, lower case and at least one special character"
-    return None
 
 @bp.app_context_processor
 def inject_current_user():
@@ -224,15 +176,7 @@ def register():
             return csrf_error_response
 
         email = request.form.get("email", "").strip().lower()
-        email_validation_error = validate_email(email)
-        if email_validation_error:
-            flash(email_validation_error, "danger")
-            return render_template("login.html", email=email)
         password = request.form.get("password", "")
-        password_validation_error = validate_password(password)
-        if password_validation_error:
-            flash(password_validation_error, "danger")
-            return render_template("login.html", email=email)
         role = request.form.get("role", "")
 
         error = register_user(email, password, role)
@@ -268,3 +212,37 @@ def doctor_panel():
 def staff_panel():
     """staff panel"""
     return render_template("staff_panel.html")
+
+@bp.route("/profile")
+def profile():
+    "Profile panel"
+    redirect_response = require_login()
+    if redirect_response:
+        return redirect_response
+    return render_template("profile.html")
+
+@bp.route("/delete_account", methods=("POST",))
+def delete_account():
+    "Deletion of user account"
+    redirect_response = require_login()
+    if redirect_response:
+        return redirect_response
+    csrf_error_response = validate_csrf_or_reject()
+    if csrf_error_response:
+        return csrf_error_response
+
+    session_token = request.cookies.get("session_token")
+    if not delete_user(session_token):
+        response = redirect(url_for("main.dashboard"))
+        flash("Failed to delete account", "error")
+        return response
+    delete_session(session_token)
+
+    response = redirect(url_for("main.login"))
+    response.delete_cookie(
+        "session_token",
+        secure=current_app.config["SESSION_COOKIE_SECURE"],
+        samesite="Lax",
+    )
+    flash("Account deleted successfully", "success")
+    return response

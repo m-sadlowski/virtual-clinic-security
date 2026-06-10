@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import sqlite3
 import secrets
+import string
 from datetime import datetime, timedelta, timezone
 
 from .db import get_db
@@ -41,6 +42,54 @@ def is_valid_role(role):
     """Return True when the role is supported by the application"""
     return role in ALLOWED_ROLES
 
+def validate_email(email: str) -> str | None:
+    """Check if inputed emain is a valid email format"""
+    splited = email.split('@')
+    if len(splited) < 2:
+        return "Emain either doesnt contain domain or local adress"
+    if len(splited) != 2:
+        return "Email contains multiple \"@\" symbols"
+    allowed_characters_local = string.ascii_letters + string.digits + "!#$%&'*+-/=?^_`{|}~"
+    allowed_characters_domain = string.ascii_letters + string.digits + "-" + "."
+    local_part = splited[0]
+    domain_part = splited[1]
+    if local_part == '' or domain_part == '':
+        return "Either local address or email domain is missing"
+
+    if local_part.startswith('.') or local_part.endswith('.'):
+        return "Local adress cannot start or end with comma"
+    if ".." in local_part:
+        return "Local adress cannot contail multiple commas next to each other"
+    if not set(local_part).issubset(allowed_characters_local):
+        return "Local adress contains invalid character"
+    if len(local_part) > 64:
+        return "Local adress too long"
+    
+    if domain_part.startswith('-') or local_part.endswith('-'):
+        return "Domain cannot end or begin with hyphen"
+    if not set(domain_part).issubset(allowed_characters_domain):
+        return "Domain contains invalid character"
+    if len(domain_part) > 256:
+        return "Domain is too long"
+    subdomain_part_list = domain_part.split('.')
+    for sub in subdomain_part_list:
+        if sub == '':
+            return "Domain includes empty subdomain"
+        if len(sub) > 64:
+            return "Subdomain too long"
+        if len(sub) == 1:
+            return "Subdomain is one character long"
+    return None
+    
+def validate_password(password: str) -> str | None:
+    """Check if password is a valid password format"""
+    special_characters = string.punctuation + string.whitespace
+    if len(password) <= 8:
+        return "Password should be at least 8 characters long"
+    if password.upper() == password or password.lower() == password or set(password).isdisjoint(special_characters):
+        return "Password should include upper case, lower case and at least one special character"
+    return None
+
 def register_user(email, password, role):
     """Register a new user and return an error when it fails"""
     email = email.strip().lower() if email else ""
@@ -52,6 +101,14 @@ def register_user(email, password, role):
 
     if not is_valid_role(role):
         return "Selected role is not valid"
+
+    email_validation_error = validate_email(email)
+    if email_validation_error:
+        return email_validation_error
+
+    password_validation_error = validate_password(password)
+    if password_validation_error:
+        return password_validation_error
 
     salt = generate_salt()
     password_hash = hash_password(password, salt)
@@ -211,3 +268,18 @@ def get_user_by_session_token(session_token):
         "role": session["role"],
         "_session_cookie_max_age": session_cookie_max_age,
     }
+
+def delete_user(session_token):
+    if not session_token:
+        return False
+    db = get_db()
+    user = get_user_by_session_token(session_token)
+    if not user:
+        return False
+    db.execute(
+        "DELETE FROM users WHERE id = ?",
+        (user["id"],)
+    )
+    db.commit()
+    return True
+

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Virtual Clinic Auth{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="h3">Profile Page</h1>
+    <p>User: {{ current_user.email }}</p>
+    <p>Role: {{ current_user.role }}</p>
+    <form method="post" action="{{ url_for('main.delete_account') }}" class="d-flex mb-0">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger">Delete Account</button>
+    </form>
+</div>
+{% endblock %}
