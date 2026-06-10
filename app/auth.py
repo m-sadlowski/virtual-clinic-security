@@ -381,6 +381,8 @@ def get_my_notes(session_token):
         """
         SELECT pn.*
         FROM patient_note pn
+        JOIN patient_access pa
+            ON pa.patient_id = pn.patient_id
         WHERE pa.patient_id = ?
         ORDER BY pn.created_at DESC
         """,
