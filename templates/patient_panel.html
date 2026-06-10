@@ -5,4 +5,16 @@
 {% block content %}
 <h1 class="h3">Patient Panel</h1>
 <p>This page is visible for users with the PATIENT role</p>
+<h3>Your notes</h3>
+{% for note in notes %}
+<div class="card mb-2">
+    <div class="card-body">
+        <p>Patient: {{ users[note.patient_id].username }} | {{ users[note.patient_id].email }}</p>
+        <p>Posted: {{ note.created_at }}</p>
+        <p>Author: {{ users[note.author_id].username }} | {{ users[note.author_id].email }}</p>
+        <p>Note:</p>
+        <p> {{ note.note }} </p>
+    </div>
+</div>
+{% endfor %}
 {% endblock %}

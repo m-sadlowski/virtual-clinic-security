@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Add Allowed Person - Virtual Clinic Auth{% endblock %}
+
+{% block content %}
+
+<h3>Personel</h3>
+{% for person in personel %}
+<div class="card mb-2">
+    <div class="card-body">
+        <p>Name: {{ person.username }} Email: {{ person.email }} Role: {{ person.role }}</p>
+        <form method="post" action="{{ url_for('main.add_personel', user_id=person.id, patient_id=patient_id) }}" class="d-flex mb-0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger">Add</button>
+        </form>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

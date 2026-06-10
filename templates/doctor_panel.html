@@ -5,4 +5,44 @@
 {% block content %}
 <h1 class="h3">Doctor Panel</h1>
 <p>This page is visible for users with the DOCTOR role</p>
+<h3>Available patients</h3>
+{% for patient in patients %}
+<div class="card mb-2">
+    <div class="card-body">
+        <p>Name: {{ patient.username }} Email: {{ patient.email }} Added: {{ patient.created_at }}</p>
+        <a class="btn btn-primary" href="{{ url_for('main.add_note', patient_id=patient.id) }}">Add Note</a>
+    </div>
+</div>
+{% endfor %}
+<h3>Authored notes</h3>
+{% for note in authored_notes %}
+<div class="card mb-2">
+    <div class="card-body">
+        <p>Patient: {{ users[note.patient_id].username }} | {{ users[note.patient_id].email }}</p>
+        <p>Posted: {{ note.created_at }}</p>
+        <p>Author: {{ users[note.author_id].username }} | {{ users[note.author_id].email }}</p>
+        <p>Note:</p>
+        <p> {{ note.note }} </p>
+        <div class="input-group">
+            <form method="post" action="{{ url_for('main.delete_note', note_id=note.id) }}" class="d-flex mb-0">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger">Delete Note</button>
+            </form>
+            <a class="btn btn-primary" href="{{ url_for('main.add_personel_list', patient_id=note.patient_id) }}">Add Personel</a>
+        </div>
+    </div>
+</div>
+{% endfor %}
+<h3>Allowed notes</h3>
+{% for note in allowed_notes %}
+<div class="card mb-2">
+    <div class="card-body">
+        <p>Patient: {{ users[note.patient_id].username }} | {{ users[note.patient_id].email }}</p>
+        <p>Posted: {{ note.created_at }}</p>
+        <p>Author: {{ users[note.author_id].username }} | {{ users[note.author_id].email }}</p>
+        <p>Note:</p>
+        <p> {{ note.note }} </p>
+    </div>
+</div>
+{% endfor %}
 {% endblock %}

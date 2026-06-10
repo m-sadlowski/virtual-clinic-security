@@ -29,4 +29,5 @@ def role_required(get_current_user, role):
                 abort(403)
             return view(*args, **kwargs)
         return wrapped_view
-    return decorator
+    return decorator  
+

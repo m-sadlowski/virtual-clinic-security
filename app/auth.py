@@ -84,18 +84,21 @@ def validate_email(email: str) -> str | None:
 def validate_password(password: str) -> str | None:
     """Check if password is a valid password format"""
     special_characters = string.punctuation + string.whitespace
-    if len(password) <= 8:
+    if len(password) < 8:
         return "Password should be at least 8 characters long"
     if password.upper() == password or password.lower() == password or set(password).isdisjoint(special_characters):
         return "Password should include upper case, lower case and at least one special character"
     return None
 
-def register_user(email, password, role):
+def register_user(email, password, role, username):
     """Register a new user and return an error when it fails"""
     email = email.strip().lower() if email else ""
     password = password or ""
     role = role or ""
+    username = username or ""
 
+    if not username:
+        username = "-"
     if not email or not password or not role:
         return "All fields are required"
 
@@ -118,10 +121,10 @@ def register_user(email, password, role):
         db = get_db()
         db.execute(
             """
-            INSERT INTO users (email, password_hash, password_salt, role, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO users (email, username, password_hash, password_salt, role, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (email, password_hash, salt, role, created_at),
+            (email, username, password_hash, salt, role, created_at),
         )
         db.commit()
     except sqlite3.IntegrityError:
@@ -224,6 +227,7 @@ def get_user_by_session_token(session_token):
             sessions.expires_at,
             users.id AS user_id,
             users.email,
+            users.username,
             users.role
         FROM sessions
         JOIN users ON users.id = sessions.user_id
@@ -266,10 +270,12 @@ def get_user_by_session_token(session_token):
         "id": session["user_id"],
         "email": session["email"],
         "role": session["role"],
+        "username": session["username"],
         "_session_cookie_max_age": session_cookie_max_age,
     }
 
-def delete_user(session_token):
+def delete_user_from_database(session_token):
+    """Deletes current session user from database"""
     if not session_token:
         return False
     db = get_db()
@@ -283,3 +289,167 @@ def delete_user(session_token):
     db.commit()
     return True
 
+def get_all_patients(session_token):
+    """Gets all patients that are in a database (should only be called in doctor limited code)"""
+    if not session_token:
+        return None
+    db = get_db()
+    user = get_user_by_session_token(session_token)
+    if not user:
+        return None
+    patients = db.execute(
+        """
+        SELECT id, email, username , created_at, role
+        FROM users
+        WHERE role = 'PATIENT'
+        ORDER BY username
+        """
+    ).fetchall()
+
+    return patients
+    
+def get_all_personel(session_token):
+    """Gets all patients that are in a database (should only be called in doctor limited code)"""
+    if not session_token:
+        return None
+    db = get_db()
+    user = get_user_by_session_token(session_token)
+    if not user:
+        return None
+    personel = db.execute(
+        """
+        SELECT id, email, username , created_at, role
+        FROM users
+        WHERE role IN ('DOCTOR', 'STAFF')
+        ORDER BY username
+        """
+    ).fetchall()
+
+    return personel
+
+def get_allowed_notes(session_token):
+    """Return all notes that user is allowed in"""
+    if not session_token:
+        return None
+    db = get_db()
+    user = get_user_by_session_token(session_token)
+    if not user:
+        return None
+    notes = db.execute(
+        """
+        SELECT pn.*
+        FROM patient_note pn
+        JOIN patient_access pa
+            ON pa.patient_id = pn.patient_id
+        WHERE pa.user_id = ?
+        ORDER BY pn.created_at DESC
+        """,
+        (user["id"],),
+    ).fetchall()
+
+    return notes
+
+def get_authored_notes(session_token):
+    """Return all notes that user authored"""
+    if not session_token:
+        return None
+    db = get_db()
+    user = get_user_by_session_token(session_token)
+    if not user:
+        return None
+    notes = db.execute(
+        """
+        SELECT pn.*
+        FROM patient_note pn
+        WHERE pn.author_id = ?
+        ORDER BY pn.created_at DESC
+        """,
+        (user["id"],),
+    ).fetchall()
+    
+    return notes
+
+def get_my_notes(session_token):
+    """Return all notes that are about user"""
+    if not session_token:
+        return None
+    db = get_db()
+    user = get_user_by_session_token(session_token)
+    if not user:
+        return None
+    notes = db.execute(
+        """
+        SELECT pn.*
+        FROM patient_note pn
+        WHERE pa.patient_id = ?
+        ORDER BY pn.created_at DESC
+        """,
+        (user["id"],),
+    ).fetchall()
+    
+    return notes
+
+def get_all_users(session_token):
+    """Gets all users"""
+    if not session_token:
+        return None
+    db = get_db()
+    user = get_user_by_session_token(session_token)
+    if not user:
+        return None
+    users = db.execute(
+        """
+        SELECT id, email, username , created_at, role
+        FROM users
+        ORDER BY username
+        """
+    ).fetchall()
+
+    return users
+
+def add_note_to_db(session_token, patient_id, note):
+    """Adds note to db"""
+    if not session_token:
+        return False
+    db = get_db()
+    user = get_user_by_session_token(session_token)
+    if not user:
+        return False
+    db.execute(
+        """
+        INSERT INTO patient_note (patient_id, author_id, note, created_at)
+        VALUES (?, ?, ?, ?)
+        """,
+        (
+            patient_id,
+            user["id"],
+            note,
+            datetime.now(timezone.utc).isoformat(),
+        ),
+    )
+    db.commit()
+    return True
+
+def delete_note_from_db(note_id):
+    """removes note from db"""
+    db = get_db()
+    db.execute(
+        "DELETE FROM patient_note WHERE id = ?",
+        (note_id,)
+    )
+    db.commit()
+
+def connect_personel_with_patient(personel_id, patient_id):
+    """Allows personel to view patients notes"""
+    db = get_db()
+    db.execute(
+        """
+        INSERT INTO patient_access (patient_id, user_id)
+        VALUES (?, ?)
+        """,
+        (
+            patient_id,
+            personel_id,
+        ),
+    )
+    db.commit()

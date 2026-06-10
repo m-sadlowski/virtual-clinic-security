@@ -1,10 +1,19 @@
 from flask import Blueprint, abort, current_app, flash, g, redirect, render_template, request, url_for
 from .auth import (
     SESSION_IDLE_LIFETIME_SECONDS,
+    add_note_to_db,
     authenticate_user,
+    connect_personel_with_patient,
     create_session,
+    delete_note_from_db,
     delete_session,
-    delete_user,
+    delete_user_from_database,
+    get_all_patients,
+    get_all_personel,
+    get_all_users,
+    get_allowed_notes,
+    get_authored_notes,
+    get_my_notes,
     get_user_by_session_token,
     register_user,
 )
@@ -177,9 +186,10 @@ def register():
 
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
+        username = request.form.get("username", "")
         role = request.form.get("role", "")
 
-        error = register_user(email, password, role)
+        error = register_user(email, password, role, username)
         if error:
             flash(error, "danger")
             return render_template("register.html", email=email, selected_role=role)
@@ -199,19 +209,30 @@ def dashboard():
 @role_required(get_current_user, "PATIENT")
 def patient_panel():
     """patient panel"""
-    return render_template("patient_panel.html")
+    session_token = request.cookies.get("session_token")
+    users = get_all_users(session_token)
+    notes = get_my_notes(session_token)
+    return render_template("patient_panel.html", notes=notes, users=users)
 
 @bp.route("/doctor")
 @role_required(get_current_user, "DOCTOR")
 def doctor_panel():
     """doctor panel"""
-    return render_template("doctor_panel.html")
+    session_token = request.cookies.get("session_token")
+    users = get_all_users(session_token)
+    patients = get_all_patients(session_token)
+    allowed_notes = get_allowed_notes(session_token)
+    authored_notes = get_authored_notes(session_token)
+    return render_template("doctor_panel.html", patients=patients, allowed_notes=allowed_notes, authored_notes=authored_notes, users=users)
 
 @bp.route("/staff")
 @role_required(get_current_user, "STAFF")
 def staff_panel():
     """staff panel"""
-    return render_template("staff_panel.html")
+    session_token = request.cookies.get("session_token")
+    allowed_notes = get_allowed_notes(session_token)
+    users = get_all_users(session_token)
+    return render_template("staff_panel.html", allowed_notes=allowed_notes, users=users)
 
 @bp.route("/profile")
 def profile():
@@ -232,7 +253,7 @@ def delete_account():
         return csrf_error_response
 
     session_token = request.cookies.get("session_token")
-    if not delete_user(session_token):
+    if not delete_user_from_database(session_token):
         response = redirect(url_for("main.dashboard"))
         flash("Failed to delete account", "error")
         return response
@@ -246,3 +267,57 @@ def delete_account():
     )
     flash("Account deleted successfully", "success")
     return response
+
+@bp.route("/add_note/<int:patient_id>", methods=("GET", "POST"))
+@role_required(get_current_user, "DOCTOR")
+def add_note(patient_id):
+    "Adding note for patient"
+
+    if request.method == "POST":
+        csrf_error_response = validate_csrf_or_reject()
+        if csrf_error_response:
+            return csrf_error_response
+
+        note = request.form.get("note", ".")
+
+        session_token = request.cookies.get("session_token")
+
+        if not add_note_to_db(session_token, patient_id, note):
+            flash("Failed adding note", "error")
+            return redirect(url_for("main.dashboard"))
+
+        flash("Note Added", "success")
+        return redirect(url_for("main.dashboard"))
+    return render_template("patient_note_form.html", patient_id=patient_id)
+
+
+@bp.route("/delete_note/<int:note_id>", methods=("POST",))
+@role_required(get_current_user, "DOCTOR")
+def delete_note(note_id):
+    "Adding note for patient"
+
+    csrf_error_response = validate_csrf_or_reject()
+    if csrf_error_response:
+        return csrf_error_response
+    delete_note_from_db(note_id)
+    return redirect(url_for("main.doctor_panel"))
+
+@bp.route("/add_personel/<int:patient_id>")
+@role_required(get_current_user, "DOCTOR")
+def add_personel_list(patient_id):
+    """Render List of Personel to add to note"""
+    session_token = request.cookies.get("session_token")
+    personel = get_all_personel(session_token)
+    return render_template("add_allowed.html", patient_id=patient_id, personel=personel)
+
+@bp.route("/add_personel/<int:patient_id>/<int:user_id>", methods=("POST",))
+@role_required(get_current_user, "DOCTOR")
+def add_personel(patient_id, user_id):
+    """Add personel to note"""
+    csrf_error_response = validate_csrf_or_reject()
+    if csrf_error_response:
+        return csrf_error_response
+    connect_personel_with_patient(user_id, patient_id)
+
+    flash("Personel Added", "success")
+    return redirect(url_for("main.dashboard"))
