@@ -10,7 +10,6 @@ from .auth import (
     delete_user_from_database,
     get_all_patients,
     get_all_personel,
-    get_all_users,
     get_allowed_notes,
     get_authored_notes,
     get_my_notes,
@@ -210,20 +209,18 @@ def dashboard():
 def patient_panel():
     """patient panel"""
     session_token = request.cookies.get("session_token")
-    users = get_all_users(session_token)
     notes = get_my_notes(session_token)
-    return render_template("patient_panel.html", notes=notes, users=users)
+    return render_template("patient_panel.html", notes=notes)
 
 @bp.route("/doctor")
 @role_required(get_current_user, "DOCTOR")
 def doctor_panel():
     """doctor panel"""
     session_token = request.cookies.get("session_token")
-    users = get_all_users(session_token)
     patients = get_all_patients(session_token)
     allowed_notes = get_allowed_notes(session_token)
     authored_notes = get_authored_notes(session_token)
-    return render_template("doctor_panel.html", patients=patients, allowed_notes=allowed_notes, authored_notes=authored_notes, users=users)
+    return render_template("doctor_panel.html", patients=patients, allowed_notes=allowed_notes, authored_notes=authored_notes)
 
 @bp.route("/staff")
 @role_required(get_current_user, "STAFF")
@@ -231,8 +228,7 @@ def staff_panel():
     """staff panel"""
     session_token = request.cookies.get("session_token")
     allowed_notes = get_allowed_notes(session_token)
-    users = get_all_users(session_token)
-    return render_template("staff_panel.html", allowed_notes=allowed_notes, users=users)
+    return render_template("staff_panel.html", allowed_notes=allowed_notes)
 
 @bp.route("/profile")
 def profile():

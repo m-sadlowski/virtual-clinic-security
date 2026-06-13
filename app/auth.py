@@ -307,6 +307,22 @@ def get_all_patients(session_token):
     ).fetchall()
 
     return patients
+
+def get_patient_name(patient_id):
+    """Gets patient name"""
+
+    db = get_db()
+    patients = db.execute(
+        """
+        SELECT username
+        FROM users
+        WHERE id = ?
+        ORDER BY username
+        """,
+        (patient_id,)
+    ).fetchone()
+
+    return patients
     
 def get_all_personel(session_token):
     """Gets all patients that are in a database (should only be called in doctor limited code)"""
@@ -381,33 +397,13 @@ def get_my_notes(session_token):
         """
         SELECT pn.*
         FROM patient_note pn
-        JOIN patient_access pa
-            ON pa.patient_id = pn.patient_id
-        WHERE pa.patient_id = ?
+        WHERE pn.patient_id = ?
         ORDER BY pn.created_at DESC
         """,
         (user["id"],),
     ).fetchall()
     
     return notes
-
-def get_all_users(session_token):
-    """Gets all users"""
-    if not session_token:
-        return None
-    db = get_db()
-    user = get_user_by_session_token(session_token)
-    if not user:
-        return None
-    users = db.execute(
-        """
-        SELECT id, email, username , created_at, role
-        FROM users
-        ORDER BY username
-        """
-    ).fetchall()
-
-    return users
 
 def add_note_to_db(session_token, patient_id, note):
     """Adds note to db"""
@@ -419,12 +415,14 @@ def add_note_to_db(session_token, patient_id, note):
         return False
     db.execute(
         """
-        INSERT INTO patient_note (patient_id, author_id, note, created_at)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO patient_note (patient_id, patient_name, author_id, author_name, note, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
         (
             patient_id,
+            get_patient_name(patient_id)[0],
             user["id"],
+            user["username"],
             note,
             datetime.now(timezone.utc).isoformat(),
         ),

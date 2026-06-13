@@ -9,9 +9,9 @@
 {% for note in allowed_notes %}
 <div class="card mb-2">
     <div class="card-body">
-        <p>Patient: {{ users[note.patient_id].username }} | {{ users[note.patient_id].email }}</p>
+        <p>Patient: {{ note.patient_name }}</p>
         <p>Posted: {{ note.created_at }}</p>
-        <p>Author: {{ users[note.author_id].username }} | {{ users[note.author_id].email }}</p>
+        <p>Author: {{ note.author_name }}</p>
         <p>Note:</p>
         <p> {{ note.note }} </p>
     </div>

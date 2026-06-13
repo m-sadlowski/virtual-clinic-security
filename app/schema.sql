@@ -27,7 +27,9 @@ CREATE TABLE sessions (
 CREATE TABLE patient_note (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     patient_id INTEGER NOT NULL,
+    patient_name TEXT NOT NULL,
     author_id INTEGER NOT NULL,
+    author_name TEXT NOT NULL,
     note TEXT NOT NULL,
     created_at TEXT NOT NULL,
     FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE,
