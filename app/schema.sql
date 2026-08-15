@@ -1,6 +1,6 @@
 DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS patient_info;
+DROP TABLE IF EXISTS patient_note;
 DROP TABLE IF EXISTS patient_access;
 
 PRAGMA FOREIGN_KEYS = ON;
@@ -28,7 +28,7 @@ CREATE TABLE patient_note (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     patient_id INTEGER NOT NULL,
     patient_name TEXT NOT NULL,
-    author_id INTEGER NOT NULL,
+    author_id INTEGER,
     author_name TEXT NOT NULL,
     note TEXT NOT NULL,
     created_at TEXT NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE patient_note (
 CREATE TABLE patient_access (
     patient_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
-    PRIMARY KEY(patient_id, user_id)
+    PRIMARY KEY(patient_id, user_id),
     FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
