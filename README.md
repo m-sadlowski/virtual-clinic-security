@@ -1,93 +1,90 @@
-# Virtual Clinic Auth
+# Virtual Clinic Security
 
-init-db na razie ustawiony jako reset bazy danych - odpalic tylko raz; bo przy istniejacej bazie usuwa!
+Security-focused virtual clinic web application built with Python, Flask and SQLite.
 
-## Technologie
-- Python
-- Flask
-- Jinja2 - renderowanie szablonow HTML
-- SQLite przez `sqlite3`
-- `hashlib.pbkdf2_hmac` do hashowania hasel
-- `hmac.compare_digest` do porownywania hashy
-- `secrets` do generowania soli i tokenow
-- Bootstrap przez CDN
+The project was developed as a two-person university project focused on authentication, authorization, session security and protection against common web application vulnerabilities.
 
-## Dokumentacja
-linki do dokumentacji w `REFERENCES.md`
+## Features
 
-## Ocena ryzyka
-znajduje sie w pliku `OCENA_RYZYKA.md`
+### Authentication & Sessions
 
-## Dodatkowe pliki
-`NOTES.md` - krotki opis i decyzje implementacji
+* User registration and login
+* Password hashing with PBKDF2-HMAC-SHA256 and individual salts
+* Server-side session management
+* Session expiration and logout
+* Protection against brute-force login attempts
 
-## Aktualny stan
-- Rejestracja i logowanie uzytkownika dzialaja na formularzach Flask/Jinja
-- Hasla sa hashowane przez `PBKDF2-HMAC` z osobna sola dla kazdego uzytkownika
-- Sesje sa przechowywane w bazie SQLite, a cookie trzyma tylko `session_token`
-- Obslugiwane role: `PATIENT`, `DOCTOR`, `STAFF`
-- Panele i nawigacja sa ograniczone zgodnie z rola uzytkownika
-- `/dashboard` przekierowuje do panelu zgodnego z rola
-- Formularze `POST` sa chronione tokenem CSRF, a `/logout` przyjmuje tylko `POST`
-- Logowanie ma ograniczenie nieudanych prob per `IP + email`
-- Możliwość dodawania notatek, aby zaprezentować różnice między rolami
+### Authorization
 
-## Struktura
-- `run.py` - punkt startowy 
-- `app/__init__.py` - tworzenie i konfiguracja app
-- `app/db.py` - polaczenie z SQLite i `init-db`
-- `app/auth.py` - logika rejestracji, logowania, sesji i operacje na bazie danych
-- `app/security.py` - CSRF, ograniczenie prob logowania i pomocnicze zabezpieczenia
-- `app/routes.py` - route'ingi do odpowiednich HTML'ow
-- `app/schema.sql` - definicje tabel SQLite
-- `templates/` - szablony HTML
+* Role-based access control for patients, doctors and staff
+* Route protection using custom authorization decorators
+* Restricted access to patient data
+* Access control for medical notes and assigned patients
 
-## Uruchomienie
-srodowisko:
+### Security
+
+* CSRF protection for state-changing requests
+* Parameterized SQL queries
+* Secure session cookies
+* Environment-based application secret
+* Protection against excessive access to patient data
+
+## Tech Stack
+
+* Python
+* Flask
+* SQLite
+* HTML / Jinja templates
+
+## Running the Application
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/m-sadlowski/virtual-clinic-security.git
+cd virtual-clinic-security
+```
+
+### 2. Create and activate a virtual environment
+
+Windows:
+
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\activate
+.\.venv\Scripts\Activate.ps1
 ```
-zaleznosci:
-```powershell
-python -m pip install -r requirements.txt
+
+Linux / macOS:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
 ```
-Wymagana konfiguracja `SECRET_KEY`:
+
+### 3. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Set the application secret
+
+Windows PowerShell:
+
 ```powershell
 $env:SECRET_KEY="your-secret-key"
 ```
-Opcjonalna konfiguracja dla lokalnego HTTP:
-```powershell
-$env:COOKIE_SECURE="0"
+
+Linux / macOS:
+
+```bash
+export SECRET_KEY="your-secret-key"
 ```
-Opcjonalne wlaczenie debug:
-```powershell
-$env:FLASK_DEBUG="1"
-```
-Tworzenie tabeli w bazie (tylko raz - 1'sze odpalenie):
-```powershell
-python -m flask --app run init-db
-```
-Uruchom:
-```powershell
+
+### 5. Run the application
+
+```bash
 python run.py
 ```
-Dostep pod adresem:
-```text
-http://127.0.0.1:5000
-```
 
-## Aktualny route'ing
-- `/` - przekierowanie do `/login`
-- `/login` i `/register` - formularze logowania i rejestracji
-- `/logout` - `POST`, usuniecie sesji i cookie
-- `/dashboard` - przekierowanie do panelu zgodnego z rola
-- `/patient`, `/doctor`, `/staff` - panele ograniczone do odpowiednich rol
-- `/profile` - profil użytkownika
-- `/delete_account` - `POST`, usunięcie konta
-- `/add_note/<int:patient_id>` - `GET, POST`, dodanie notatki do pacjenta o <id> (ograniczone do roli doktora)
-- `/delete_note/<int:note_id>` - `POST`, usunięcie notatki o <id> (ograniczone do roli doktora)
-- `/add_personel/<int:patient_id>` - przekierowuje do listy użytkowników (staff i doktorzy) do dodania dostępu do notatki (ograniczone do roli doktora)
-- `/add_personel/<int:patient_id>/<int:user_id>` - `POST`, dodanie użytkownika o <id> do notatki (ograniczone do roli doktora)
-
-
+The application will be available at the address displayed in the terminal.
